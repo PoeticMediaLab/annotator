@@ -15,6 +15,7 @@
     <!-- The main Annotator script -->
     <script src="pkg/annotator.min.js"></script>
     <script src="pkg/color_tags.js"></script>
+    <script src="pkg/categories.js"></script>
 
     <!-- Annotator's styling and images -->
     <link rel="stylesheet" type="text/css" href="css/annotator.css">
@@ -67,7 +68,8 @@
           $('#airlock').annotator()
                        .annotator('addPlugin', 'Permissions')
                        .annotator('addPlugin', 'Tags')
-                       .annotator('addPlugin', 'ColorTags');
+                       .annotator('addPlugin', 'ColorTags')
+                       .annotator('addPlugin', 'Categories');
         }
       });
     </script>
