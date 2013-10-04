@@ -5,9 +5,9 @@ describe "Filter", ->
   beforeEach ->
     element = $('<div />')
     annotator = {
-      subscribe: sinon.spy()
+      subscribe: jasmine.createSpy('Annotator#subscribe()')
       element: {
-        find: sinon.stub().returns($())
+        find: jasmine.createSpy('element#find()').andReturn($())
       }
     }
     plugin = new Annotator.Plugin.Filter(element[0])
@@ -27,53 +27,53 @@ describe "Filter", ->
       filterElement.remove()
 
     it "should call Filter#_onFilterFocus when a filter input is focussed", ->
-      sinon.spy(plugin, '_onFilterFocus')
+      spyOn(plugin, '_onFilterFocus')
       filterElement.find('input').focus()
-      assert(plugin._onFilterFocus.calledOnce)
+      expect(plugin._onFilterFocus).toHaveBeenCalled()
 
     it "should call Filter#_onFilterBlur when a filter input is blurred", ->
-      sinon.spy(plugin, '_onFilterBlur')
+      spyOn(plugin, '_onFilterBlur')
       filterElement.find('input').blur()
-      assert(plugin._onFilterBlur.calledOnce)
+      expect(plugin._onFilterBlur).toHaveBeenCalled()
 
     it "should call Filter#_onFilterKeyup when a key is pressed in an input", ->
-      sinon.spy(plugin, '_onFilterKeyup')
+      spyOn(plugin, '_onFilterKeyup')
       filterElement.find('input').keyup()
-      assert(plugin._onFilterKeyup.calledOnce)
+      expect(plugin._onFilterKeyup).toHaveBeenCalled()
 
   describe "constructor", ->
     it "should have an empty filters array", ->
-      assert.deepEqual(plugin.filters, [])
+      expect(plugin.filters).toEqual([])
 
     it "should have an filter element wrapped in jQuery", ->
-      assert.isTrue(plugin.filter instanceof jQuery)
-      assert.lengthOf(plugin.filter, 1)
+      expect(plugin.filter instanceof jQuery).toBe(true)
+      expect(plugin.filter.length).toBe(1)
 
     it "should append the toolbar to the @options.appendTo selector", ->
-      assert.isTrue(plugin.element instanceof jQuery)
-      assert.lengthOf(plugin.element, 1)
+      expect(plugin.element instanceof jQuery).toBe(true)
+      expect(plugin.element.length).toBe(1)
 
       parent = $(plugin.options.appendTo)
-      assert.equal(plugin.element.parent()[0], parent[0])
+      expect(plugin.element.parent()[0]).toBe(parent[0])
 
   describe "pluginInit", ->
     beforeEach ->
-      sinon.stub(plugin, 'updateHighlights')
-      sinon.stub(plugin, '_setupListeners').returns(plugin)
-      sinon.stub(plugin, '_insertSpacer').returns(plugin)
-      sinon.stub(plugin, 'addFilter')
+      spyOn(plugin, 'updateHighlights')
+      spyOn(plugin, '_setupListeners').andReturn(plugin)
+      spyOn(plugin, '_insertSpacer').andReturn(plugin)
+      spyOn(plugin, 'addFilter')
 
     it "should call Filter#updateHighlights()", ->
       plugin.pluginInit()
-      assert(plugin.updateHighlights.calledOnce)
+      expect(plugin.updateHighlights).toHaveBeenCalled()
 
     it "should call Filter#_setupListeners()", ->
       plugin.pluginInit()
-      assert(plugin._setupListeners.calledOnce)
-
+      expect(plugin._setupListeners).toHaveBeenCalled()
+      
     it "should call Filter#_insertSpacer()", ->
       plugin.pluginInit()
-      assert(plugin._insertSpacer.calledOnce)
+      expect(plugin._insertSpacer).toHaveBeenCalled()
 
     it "should load any filters in the Filter#options.filters array", ->
       filters = [
@@ -86,7 +86,7 @@ describe "Filter", ->
       plugin.pluginInit()
 
       for filter in filters
-        assert.isTrue(plugin.addFilter.calledWith(filter))
+        expect(plugin.addFilter).toHaveBeenCalledWith(filter)
 
   describe "_setupListeners", ->
     it "should subscribe to all relevant events on the annotator", ->
@@ -96,7 +96,7 @@ describe "Filter", ->
         'annotationUpdated', 'annotationDeleted'
       ]
       for event in events
-        assert.isTrue(plugin.annotator.subscribe.calledWith(event, plugin.updateHighlights))
+        expect(plugin.annotator.subscribe).toHaveBeenCalledWith(event, plugin.updateHighlights)
 
   describe "addFilter", ->
     filter = null
@@ -106,19 +106,19 @@ describe "Filter", ->
       plugin.addFilter(filter)
 
     it "should add a filter object to Filter#plugins", ->
-      assert.ok(plugin.filters[0])
+      expect(plugin.filters[0]).toBeTruthy()
 
     it "should append the html to Filter#toolbar", ->
       filter = plugin.filters[0]
-      assert.equal(filter.element[0], plugin.element.find('#annotator-filter-tags').parent()[0])
+      expect(filter.element[0]).toBe(plugin.element.find('#annotator-filter-tags').parent()[0])
 
     it "should store the filter in the elements data store under 'filter'", ->
       filter = plugin.filters[0]
-      assert.equal(filter.element.data('filter'), filter)
+      expect(filter.element.data('filter')).toBe(filter)
 
     it "should not add a filter for a property that has already been loaded", ->
       plugin.addFilter { label: 'Tag', property: 'tags' }
-      assert.lengthOf(plugin.filters, 1)
+      expect(plugin.filters.length).toBe(1)
 
   describe "updateFilter", ->
     filter = null
@@ -131,7 +131,7 @@ describe "Filter", ->
         property: 'text'
         element: $('<span><input value="ca" /></span>')
         annotations: [],
-        isFiltered: (value, text) ->
+        isFiltered: jasmine.createSpy('filter.isFiltered()').andCallFake (value, text) ->
           text.indexOf('ca') != -1
       }
       annotations = [
@@ -142,35 +142,35 @@ describe "Filter", ->
 
       plugin.filters = {'text': filter}
       plugin.highlights = {
-        map: -> annotations
+        map: jasmine.createSpy('map').andReturn(annotations)
       }
 
-      sinon.stub(plugin, 'updateHighlights')
-      sinon.stub(plugin, 'resetHighlights')
-      sinon.stub(plugin, 'filterHighlights')
+      spyOn(plugin, 'updateHighlights')
+      spyOn(plugin, 'resetHighlights')
+      spyOn(plugin, 'filterHighlights')
 
     it "should call Filter#updateHighlights()", ->
       plugin.updateFilter(filter)
-      assert(plugin.updateHighlights.calledOnce)
+      expect(plugin.updateHighlights).toHaveBeenCalled()
 
     it "should call Filter#resetHighlights()", ->
       plugin.updateFilter(filter)
-      assert(plugin.resetHighlights.calledOnce)
+      expect(plugin.resetHighlights).toHaveBeenCalled()
 
     it "should filter the cat and car annotations", ->
       plugin.updateFilter(filter)
-      assert.deepEqual(filter.annotations, [
+      expect(filter.annotations).toEqual([
         annotations[0], annotations[2]
       ])
 
     it "should call Filter#filterHighlights()", ->
       plugin.updateFilter(filter)
-      assert(plugin.filterHighlights.calledOnce)
+      expect(plugin.filterHighlights).toHaveBeenCalled()
 
     it "should NOT call Filter#filterHighlights() if there is no input", ->
       filter.element.find('input').val('')
       plugin.updateFilter(filter)
-      assert.isFalse(plugin.filterHighlights.called)
+      expect(plugin.filterHighlights).not.toHaveBeenCalled()
 
   describe "updateHighlights", ->
     beforeEach ->
@@ -178,10 +178,10 @@ describe "Filter", ->
       plugin.updateHighlights()
 
     it "should fetch the visible highlights from the Annotator#element", ->
-      assert.isTrue(plugin.annotator.element.find.calledWith('.annotator-hl:visible'))
+      expect(plugin.annotator.element.find).toHaveBeenCalledWith('.annotator-hl:visible')
 
     it "should set the Filter#highlights property", ->
-      assert.ok(plugin.highlights)
+      expect(plugin.highlights).toBeTruthy()
 
   describe "filterHighlights", ->
     div = null
@@ -212,25 +212,25 @@ describe "Filter", ->
       plugin.filterHighlights()
 
       #Only index 1 should remain.
-      assert.lengthOf(div.find('.' + plugin.classes.hl.hide), 4)
+      expect(div.find('.' + plugin.classes.hl.hide).length).toBe(4)
 
     it "should hide all highlights not whitelisted by _every_ filter if every filter is active", ->
       plugin.filters[1].annotations = []
       plugin.filterHighlights()
 
-      assert.lengthOf(div.find('.' + plugin.classes.hl.hide), 3)
+      expect(div.find('.' + plugin.classes.hl.hide).length).toBe(3)
 
     it "should hide all highlights not whitelisted if only one filter", ->
       plugin.filters = plugin.filters.slice(0, 1)
       plugin.filterHighlights()
 
-      assert.lengthOf(div.find('.' + plugin.classes.hl.hide), 3)
+      expect(div.find('.' + plugin.classes.hl.hide).length).toBe(3)
 
   describe "resetHighlights", ->
     it "should remove the filter-hide class from all highlights", ->
       plugin.highlights = $('<span /><span /><span />').addClass(plugin.classes.hl.hide)
       plugin.resetHighlights()
-      assert.lengthOf(plugin.highlights.filter('.' + plugin.classes.hl.hide), 0)
+      expect(plugin.highlights.filter('.' + plugin.classes.hl.hide).length).toBe(0)
 
   describe "group: filter input actions", ->
     filterElement = null
@@ -244,7 +244,7 @@ describe "Filter", ->
         plugin._onFilterFocus({
           target: filterElement.find('input')[0]
         })
-        assert.isTrue(filterElement.hasClass(plugin.classes.active))
+        expect(filterElement.hasClass(plugin.classes.active)).toBe(true)
 
     describe "_onFilterBlur", ->
       it "should remove the active class from the element", ->
@@ -252,32 +252,32 @@ describe "Filter", ->
         plugin._onFilterBlur({
           target: filterElement.find('input')[0]
         })
-        assert.isFalse(filterElement.hasClass(plugin.classes.active))
+        expect(filterElement.hasClass(plugin.classes.active)).toBe(false)
 
       it "should NOT remove the active class from the element if it has a value", ->
         filterElement.addClass(plugin.classes.active)
         plugin._onFilterBlur({
           target: filterElement.find('input').val('filtered')[0]
         })
-        assert.isTrue(filterElement.hasClass(plugin.classes.active))
+        expect(filterElement.hasClass(plugin.classes.active)).toBe(true)
 
     describe "_onFilterKeyup", ->
       beforeEach ->
         plugin.filters = [{label: 'My Filter'}]
-        sinon.stub(plugin, 'updateFilter')
+        spyOn(plugin, 'updateFilter')
 
       it "should call Filter#updateFilter() with the relevant filter", ->
         filterElement.data('filter', plugin.filters[0])
         plugin._onFilterKeyup({
           target: filterElement.find('input')[0]
         })
-        assert.isTrue(plugin.updateFilter.calledWith(plugin.filters[0]))
+        expect(plugin.updateFilter).toHaveBeenCalledWith(plugin.filters[0])
 
       it "should NOT call Filter#updateFilter() if no filter is found", ->
         plugin._onFilterKeyup({
           target: filterElement.find('input')[0]
         })
-        assert.isFalse(plugin.updateFilter.called)
+        expect(plugin.updateFilter).not.toHaveBeenCalled()
 
     describe "navigation", ->
       element1    = null
@@ -301,59 +301,59 @@ describe "Filter", ->
         element3.data('annotation', annotation3)
 
         plugin.highlights = $([element1[0],element2[0],element3[0]])
-        sinon.spy(plugin, '_scrollToHighlight')
+        spyOn(plugin, '_scrollToHighlight')
 
       describe "_onNextClick", ->
         it "should advance to the next element", ->
           element2.addClass(plugin.classes.hl.active)
           plugin._onNextClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element3[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element3[0]])
 
         it "should loop back to the start once it gets to the end", ->
           element3.addClass(plugin.classes.hl.active)
           plugin._onNextClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element1[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element1[0]])
 
         it "should use the first element if there is no current element", ->
           plugin._onNextClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element1[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element1[0]])
 
         it "should only navigate through non hidden elements", ->
           element1.addClass(plugin.classes.hl.active)
           element2.addClass(plugin.classes.hl.hide)
           plugin._onNextClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element3[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element3[0]])
 
         it "should do nothing if there are no annotations", ->
           plugin.highlights = $()
           plugin._onNextClick()
-          assert.isFalse(plugin._scrollToHighlight.called)
+          expect(plugin._scrollToHighlight).not.toHaveBeenCalled()
 
       describe "_onPreviousClick", ->
         it "should advance to the previous element", ->
           element3.addClass(plugin.classes.hl.active)
           plugin._onPreviousClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element2[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element2[0]])
 
         it "should loop to the end once it gets to the beginning", ->
           element1.addClass(plugin.classes.hl.active)
           plugin._onPreviousClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element3[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element3[0]])
 
         it "should use the last element if there is no current element", ->
           plugin._onPreviousClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element3[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element3[0]])
 
         it "should only navigate through non hidden elements", ->
           element3.addClass(plugin.classes.hl.active)
           element2.addClass(plugin.classes.hl.hide)
           plugin._onPreviousClick()
-          assert.isTrue(plugin._scrollToHighlight.calledWith([element1[0]]))
+          expect(plugin._scrollToHighlight).toHaveBeenCalledWith([element1[0]])
 
         it "should do nothing if there are no annotations", ->
           plugin.highlights = $()
           plugin._onPreviousClick()
-          assert.isFalse(plugin._scrollToHighlight.called)
+          expect(plugin._scrollToHighlight).not.toHaveBeenCalled()
 
     describe "_scrollToHighlight", ->
       mockjQuery = null
@@ -361,50 +361,44 @@ describe "Filter", ->
       beforeEach ->
         plugin.highlights = $()
         mockjQuery = {
-          addClass: sinon.spy()
-          animate: sinon.spy()
-          offset: sinon.stub().returns({top: 0})
+          addClass: jasmine.createSpy('jQuery#addClass()')
+          animate: jasmine.createSpy('jQuery#animate()')
+          offset: jasmine.createSpy('jQuery#offset()').andReturn({top: 0})
         }
-        sinon.spy(plugin.highlights, 'removeClass')
-        sinon.stub(jQuery.prototype, 'init').returns(mockjQuery)
-
-      afterEach ->
-        jQuery.prototype.init.restore()
+        spyOn(plugin.highlights, 'removeClass')
+        spyOn(jQuery.prototype, 'init').andReturn(mockjQuery)
 
       it "should remove active class from currently active element", ->
         plugin._scrollToHighlight({})
-        assert.isTrue(plugin.highlights.removeClass.calledWith(plugin.classes.hl.active))
+        expect(plugin.highlights.removeClass).toHaveBeenCalledWith(plugin.classes.hl.active)
 
       it "should add active class to provided elements", ->
         plugin._scrollToHighlight({})
-        assert.isTrue(mockjQuery.addClass.calledWith(plugin.classes.hl.active))
+        expect(mockjQuery.addClass).toHaveBeenCalledWith(plugin.classes.hl.active)
 
       it "should animate the scrollbar to the highlight offset", ->
         plugin._scrollToHighlight({})
-        assert(mockjQuery.offset.calledOnce)
-        assert(mockjQuery.animate.calledOnce)
+        expect(mockjQuery.offset).toHaveBeenCalled()
+        expect(mockjQuery.animate).toHaveBeenCalled()
 
     describe "_onClearClick", ->
       mockjQuery = null
 
       beforeEach ->
         mockjQuery = {}
-        mockjQuery.val = sinon.stub().returns(mockjQuery)
-        mockjQuery.prev = sinon.stub().returns(mockjQuery)
-        mockjQuery.keyup = sinon.stub().returns(mockjQuery)
-        mockjQuery.blur = sinon.stub().returns(mockjQuery)
+        mockjQuery.val = jasmine.createSpy().andReturn(mockjQuery)
+        mockjQuery.prev = jasmine.createSpy().andReturn(mockjQuery)
+        mockjQuery.keyup = jasmine.createSpy().andReturn(mockjQuery)
+        mockjQuery.blur = jasmine.createSpy().andReturn(mockjQuery)
 
-        sinon.stub(jQuery.prototype, 'init').returns(mockjQuery)
+        spyOn($.prototype, 'init').andReturn(mockjQuery)
         plugin._onClearClick({target: {}})
 
-      afterEach ->
-        jQuery.prototype.init.restore()
-
       it "should clear the input", ->
-        assert.isTrue(mockjQuery.val.calledWith(''))
+        expect(mockjQuery.val).toHaveBeenCalledWith('')
 
       it "should trigger the blur event", ->
-        assert(mockjQuery.blur.calledOnce)
+        expect(mockjQuery.blur).toHaveBeenCalled()
 
       it "should trigger the keyup event", ->
-        assert(mockjQuery.keyup.calledOnce)
+        expect(mockjQuery.keyup).toHaveBeenCalled()

@@ -5,7 +5,7 @@
 # Returns Date instance.
 createDateFromISO8601 = (string) ->
   regexp = "([0-9]{4})(-([0-9]{2})(-([0-9]{2})" +
-           "(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\\.([0-9]+))?)?" +
+           "(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?" +
            "(Z|(([-+])([0-9]{2}):([0-9]{2})))?)?)?)?"
 
   d = string.match(new RegExp(regexp))
@@ -198,10 +198,7 @@ class Annotator.Plugin.Auth extends Annotator.Plugin
                 @_unsafeToken.ttl &&
                 @_unsafeToken.consumerKey
 
-    if allFields && this.timeToExpiry() > 0
-      return true
-    else
-      return false
+    allFields && this.timeToExpiry() > 0
 
   # Public: Calculates the time in seconds until the current token expires.
   #

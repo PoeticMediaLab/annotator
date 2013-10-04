@@ -13,7 +13,7 @@ describe "Annotator.Widget", ->
           anotherClass: 'another-class'
 
       child = new ChildWidget()
-      assert.deepEqual(child.classes, {
+      expect(child.classes).toEqual({
         hide: 'annotator-hide'
         invert:
           x: 'annotator-invert-x'
@@ -26,25 +26,25 @@ describe "Annotator.Widget", ->
     it "should add the Widget#classes.invert.x class to the Widget#element", ->
       widget.element.removeClass(widget.classes.invert.x)
       widget.invertX()
-      assert.isTrue(widget.element.hasClass(widget.classes.invert.x))
+      expect(widget.element.hasClass(widget.classes.invert.x)).toBe(true)
 
   describe "invertY", ->
     it "should add the Widget#classes.invert.y class to the Widget#element", ->
       widget.element.removeClass(widget.classes.invert.y)
       widget.invertY()
-      assert.isTrue(widget.element.hasClass(widget.classes.invert.y))
+      expect(widget.element.hasClass(widget.classes.invert.y)).toBe(true)
 
   describe "isInvertedY", ->
     it "should return the vertical inverted status of the Widget", ->
-      assert.isFalse(widget.isInvertedY())
+      expect(widget.isInvertedY()).toBe(false)
       widget.invertY()
-      assert.isTrue(widget.isInvertedY())
+      expect(widget.isInvertedY()).toBe(true)
 
   describe "isInvertedX", ->
     it "should return the horizontal inverted status of the Widget", ->
-      assert.isFalse(widget.isInvertedX())
+      expect(widget.isInvertedX()).toBe(false)
       widget.invertX()
-      assert.isTrue(widget.isInvertedX())
+      expect(widget.isInvertedX()).toBe(true)
 
   describe "resetOrientation", ->
     it "should remove the Widget#classes.invert classes from the Widget#element", ->
@@ -53,8 +53,8 @@ describe "Annotator.Widget", ->
             .addClass(widget.classes.invert.y)
 
       widget.resetOrientation()
-      assert.isFalse(widget.element.hasClass(widget.classes.invert.x))
-      assert.isFalse(widget.element.hasClass(widget.classes.invert.y))
+      expect(widget.element.hasClass(widget.classes.invert.x)).toBe(false)
+      expect(widget.element.hasClass(widget.classes.invert.y)).toBe(false)
 
   describe "checkOrientation", ->
     mocks = [
@@ -93,47 +93,44 @@ describe "Annotator.Widget", ->
     beforeEach ->
       {window, element} = mocks.shift()
 
-      sinon.stub(jQuery.fn, 'init').returns({
-        width: sinon.stub().returns(window.width)
-        scrollTop: sinon.stub().returns(window.scrollTop)
-        scrollLeft: sinon.stub().returns(window.scrollLeft)
+      spyOn(jQuery.fn, 'init').andReturn({
+        width: jasmine.createSpy('$(window).width()').andReturn(window.width)
+        scrollTop: jasmine.createSpy('$(window).scrollTop()').andReturn(window.scrollTop)
+        scrollLeft: jasmine.createSpy('$(window).scrollLeft()').andReturn(window.scrollLeft)
       })
 
-      sinon.stub(widget.element, 'children').returns({
-        offset: sinon.stub().returns(element.offset)
-        width:  sinon.stub().returns(element.width)
+      spyOn(widget.element, 'children').andReturn({
+        offset: jasmine.createSpy('widget.element.offset()').andReturn(element.offset)
+        width:  jasmine.createSpy('widget.element.width()').andReturn(element.width)
       })
 
-      sinon.spy(widget, 'invertX')
-      sinon.spy(widget, 'invertY')
-      sinon.spy(widget, 'resetOrientation')
+      spyOn(widget, 'invertX')
+      spyOn(widget, 'invertY')
+      spyOn(widget, 'resetOrientation')
 
       widget.checkOrientation()
 
-    afterEach ->
-      jQuery.fn.init.restore()
-
     it "should reset the widget each time", ->
-      assert(widget.resetOrientation.calledOnce)
-      assert.isFalse(widget.invertX.called)
-      assert.isFalse(widget.invertY.called)
+      expect(widget.resetOrientation).toHaveBeenCalled()
+      expect(widget.invertX).not.toHaveBeenCalled()
+      expect(widget.invertY).not.toHaveBeenCalled()
 
     it "should invert the widget if it does not fit horizontally", ->
-      assert(widget.invertX.calledOnce)
-      assert.isFalse(widget.invertY.called)
+      expect(widget.invertX).toHaveBeenCalled()
+      expect(widget.invertY).not.toHaveBeenCalled()
 
     it "should invert the widget if it does not fit vertically", ->
-      assert.isFalse(widget.invertX.called)
-      assert(widget.invertY.calledOnce)
+      expect(widget.invertX).not.toHaveBeenCalled()
+      expect(widget.invertY).toHaveBeenCalled()
 
     it "should invert the widget if it does not fit horizontally or vertically", ->
-      assert(widget.invertX.calledOnce)
-      assert(widget.invertY.calledOnce)
+      expect(widget.invertX).toHaveBeenCalled()
+      expect(widget.invertY).toHaveBeenCalled()
 
     it "should invert the widget if it does not fit vertically and the window is scrolled", ->
-      assert.isFalse(widget.invertX.called)
-      assert(widget.invertY.calledOnce)
+      expect(widget.invertX).not.toHaveBeenCalled()
+      expect(widget.invertY).toHaveBeenCalled()
 
     it "should invert the widget if it fits horizontally due to the window scrolled", ->
-      assert.isFalse(widget.invertX.called)
-      assert.isFalse(widget.invertY.called)
+      expect(widget.invertX).not.toHaveBeenCalled()
+      expect(widget.invertY).not.toHaveBeenCalled()

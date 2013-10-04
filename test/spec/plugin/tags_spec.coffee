@@ -11,36 +11,36 @@ describe 'Annotator.Plugin.Tags', ->
 
   it "should parse whitespace-delimited tags into an array", ->
     str = 'one two  three\tfourFive'
-    assert.deepEqual(plugin.parseTags(str), ['one', 'two', 'three', 'fourFive'])
+    expect(plugin.parseTags(str)).toEqual(['one', 'two', 'three', 'fourFive'])
 
   it "should stringify a tags array into a space-delimited string", ->
     ary = ['one', 'two', 'three']
-    assert.equal(plugin.stringifyTags(ary), "one two three")
+    expect(plugin.stringifyTags(ary)).toEqual("one two three")
 
   describe "pluginInit", ->
     it "should add a field to the editor", ->
-      sinon.spy(annotator.editor, 'addField')
+      spyOn(annotator.editor, 'addField')
       plugin.pluginInit()
-      assert(annotator.editor.addField.calledOnce)
+      expect(annotator.editor.addField).toHaveBeenCalled()
 
     it "should register a filter if the Filter plugin is loaded", ->
-      plugin.annotator.plugins.Filter = {addFilter: sinon.spy()}
+      plugin.annotator.plugins.Filter = {addFilter: jasmine.createSpy()}
       plugin.pluginInit()
-      assert(plugin.annotator.plugins.Filter.addFilter.calledOnce)
+      expect(plugin.annotator.plugins.Filter.addFilter).toHaveBeenCalled()
 
   describe "updateField", ->
     it "should set the value of the input", ->
       annotation = {tags: ['apples', 'oranges', 'pears']}
       plugin.updateField(plugin.field, annotation)
 
-      assert.equal(plugin.input.val(), 'apples oranges pears')
+      expect(plugin.input.val()).toEqual('apples oranges pears')
 
     it "should set the clear the value of the input if there are no tags", ->
       annotation = {}
       plugin.input.val('apples pears oranges')
       plugin.updateField(plugin.field, annotation)
 
-      assert.equal(plugin.input.val(), '')
+      expect(plugin.input.val()).toEqual('')
 
   describe "setAnnotationTags", ->
     it "should set the annotation's tags", ->
@@ -48,7 +48,7 @@ describe 'Annotator.Plugin.Tags', ->
       plugin.input.val('apples oranges pears')
       plugin.setAnnotationTags(plugin.field, annotation)
 
-      assert.deepEqual(annotation.tags, ['apples', 'oranges', 'pears'])
+      expect(annotation.tags).toEqual(['apples', 'oranges', 'pears'])
 
   describe "updateViewer", ->
     it "should insert the tags into the field", ->
@@ -56,7 +56,7 @@ describe 'Annotator.Plugin.Tags', ->
       field = $('<div />')[0]
 
       plugin.updateViewer(field, annotation)
-      assert.deepEqual($(field).html(), [
+      expect($(field).html()).toEqual([
         '<span class="annotator-tag">foo</span>'
         '<span class="annotator-tag">bar</span>'
         '<span class="annotator-tag">baz</span>'
@@ -67,13 +67,13 @@ describe 'Annotator.Plugin.Tags', ->
       field = $('<div />')[0]
 
       plugin.updateViewer(field, annotation)
-      assert.lengthOf($(field).parent(), 0)
+      expect($(field).parent().length).toEqual(0)
 
       annotation = {}
       field = $('<div />')[0]
 
       plugin.updateViewer(field, annotation)
-      assert.lengthOf($(field).parent(), 0)
+      expect($(field).parent().length).toEqual(0)
 
 
 describe 'Annotator.Plugin.Tags.filterCallback', ->
@@ -81,9 +81,9 @@ describe 'Annotator.Plugin.Tags.filterCallback', ->
   beforeEach -> filter = Annotator.Plugin.Tags.filterCallback
 
   it 'should return true if all tags are matched by keywords', ->
-    assert.isTrue(filter('cat dog mouse', ['cat', 'dog', 'mouse']))
-    assert.isTrue(filter('cat dog', ['cat', 'dog', 'mouse']))
+    expect(filter('cat dog mouse', ['cat', 'dog', 'mouse'])).toBe(true)
+    expect(filter('cat dog', ['cat', 'dog', 'mouse'])).toBe(true)
 
   it 'should NOT return true if all tags are NOT matched by keywords', ->
-    assert.isFalse(filter('cat dog', ['cat']))
-    assert.isFalse(filter('cat dog', []))
+    expect(filter('cat dog', ['cat'])).toBe(false)
+    expect(filter('cat dog', [])).toBe(false)

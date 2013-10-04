@@ -8,7 +8,7 @@ describe 'Annotator.Notification', ->
     notification.element.remove()
 
   it 'should be appended to the document.body', ->
-    assert.equal(notification.element[0].parentNode, document.body)
+    expect(notification.element[0].parentNode).toEqual(document.body)
 
   describe '.show()', ->
     message = 'This is a notification message'
@@ -17,14 +17,14 @@ describe 'Annotator.Notification', ->
       notification.show(message)
 
     it 'should have a class named "annotator-notice-show"', ->
-      assert.isTrue(notification.element.hasClass('annotator-notice-show'))
+      expect(notification.element.hasClass('annotator-notice-show')).toBeTruthy()
 
     it 'should update the notification message', ->
-      assert.equal(notification.element.html(), message)
+      expect(notification.element.html()).toEqual(message)
 
   describe '.hide()', ->
     beforeEach ->
       notification.hide()
 
     it 'should not have a class named "show"', ->
-      assert.isFalse(notification.element.hasClass('show'))
+      expect(notification.element.hasClass('show')).toBeFalsy()

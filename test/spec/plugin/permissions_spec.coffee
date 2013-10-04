@@ -11,65 +11,65 @@ describe 'Annotator.Plugin.Permissions', ->
   it "it should add the current user object to newly created annotations on beforeAnnotationCreated", ->
     ann = {}
     $(el).trigger('beforeAnnotationCreated', [ann])
-    assert.isUndefined(ann.user)
+    expect(ann.user).toBeUndefined()
 
     ann = {}
     permissions.setUser('alice')
     $(el).trigger('beforeAnnotationCreated', [ann])
-    assert.equal(ann.user, 'alice')
+    expect(ann.user).toEqual('alice')
 
     ann = {}
     permissions.setUser({id: 'alice'})
     permissions.options.userId = (user) -> user.id
     $(el).trigger('beforeAnnotationCreated', [ann])
-    assert.deepEqual(ann.user, {id: 'alice'})
+    expect(ann.user).toEqual({id: 'alice'})
 
   it "it should add permissions to newly created annotations on beforeAnnotationCreated", ->
     ann = {}
     $(el).trigger('beforeAnnotationCreated', [ann])
-    assert.ok(ann.permissions)
+    expect(ann.permissions).toBeTruthy()
 
     ann = {}
     permissions.options.permissions = {}
     $(el).trigger('beforeAnnotationCreated', [ann])
-    assert.deepEqual(ann.permissions, {})
+    expect(ann.permissions).toEqual({})
 
   describe 'pluginInit', ->
     beforeEach ->
       permissions.annotator = {
         viewer: {
-          addField: sinon.spy()
+          addField: jasmine.createSpy('addField')
         },
         editor: {
-          addField: sinon.spy()
+          addField: jasmine.createSpy('addField')
         },
         plugins: {}
       }
 
     it "should register a field with the Viewer", ->
       permissions.pluginInit()
-      assert(permissions.annotator.viewer.addField.calledOnce)
+      expect(permissions.annotator.viewer.addField).toHaveBeenCalled()
 
     it "should register an two checkbox fields with the Editor", ->
       permissions.pluginInit()
-      assert.equal(permissions.annotator.editor.addField.callCount, 2)
+      expect(permissions.annotator.editor.addField.callCount).toEqual(2)
 
     it "should register an 'anyone can view' field with the Editor if showEditPermissionsCheckbox is true", ->
       permissions.options.showViewPermissionsCheckbox = true
       permissions.options.showEditPermissionsCheckbox = false
       permissions.pluginInit()
-      assert.equal(permissions.annotator.editor.addField.callCount, 1)
+      expect(permissions.annotator.editor.addField.callCount).toEqual(1)
 
     it "should register an 'anyone can edit' field with the Editor if showViewPermissionsCheckbox is true", ->
       permissions.options.showViewPermissionsCheckbox = false
       permissions.options.showEditPermissionsCheckbox = true
       permissions.pluginInit()
-      assert.equal(permissions.annotator.editor.addField.callCount, 1)
+      expect(permissions.annotator.editor.addField.callCount).toEqual(1)
 
     it "should register a filter if the Filter plugin is loaded", ->
-      permissions.annotator.plugins.Filter = {addFilter: sinon.spy()}
+      permissions.annotator.plugins.Filter = {addFilter: jasmine.createSpy()}
       permissions.pluginInit()
-      assert(permissions.annotator.plugins.Filter.addFilter.calledOnce)
+      expect(permissions.annotator.plugins.Filter.addFilter).toHaveBeenCalled()
 
   describe 'authorize', ->
     annotations = null
@@ -91,42 +91,42 @@ describe 'Annotator.Plugin.Permissions', ->
 
       it 'should allow any action for an annotation with no authorisation info', ->
         a = annotations[0]
-        assert.isTrue(permissions.authorize(null,  a))
-        assert.isTrue(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeTruthy()
+        expect(permissions.authorize('foo', a)).toBeTruthy()
         permissions.setUser('alice')
-        assert.isTrue(permissions.authorize(null,  a))
-        assert.isTrue(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeTruthy()
+        expect(permissions.authorize('foo', a)).toBeTruthy()
 
       it 'should NOT allow any action if annotation.user and no @user is set', ->
         a = annotations[1]
-        assert.isFalse(permissions.authorize(null,  a))
-        assert.isFalse(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeFalsy()
+        expect(permissions.authorize('foo', a)).toBeFalsy()
 
       it 'should allow any action if @options.userId(@user) == annotation.user', ->
         a = annotations[1]
         permissions.setUser('alice')
-        assert.isTrue(permissions.authorize(null,  a))
-        assert.isTrue(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeTruthy()
+        expect(permissions.authorize('foo', a)).toBeTruthy()
 
       it 'should NOT allow any action if @options.userId(@user) != annotation.user', ->
         a = annotations[1]
         permissions.setUser('bob')
-        assert.isFalse(permissions.authorize(null,  a))
-        assert.isFalse(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeFalsy()
+        expect(permissions.authorize('foo', a)).toBeFalsy()
 
       it 'should allow any action if annotation.permissions == {}', ->
         a = annotations[2]
-        assert.isTrue(permissions.authorize(null,  a))
-        assert.isTrue(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeTruthy()
+        expect(permissions.authorize('foo', a)).toBeTruthy()
         permissions.setUser('alice')
-        assert.isTrue(permissions.authorize(null,  a))
-        assert.isTrue(permissions.authorize('foo', a))
+        expect(permissions.authorize(null,  a)).toBeTruthy()
+        expect(permissions.authorize('foo', a)).toBeTruthy()
 
       it 'should allow an action if annotation.permissions[action] == []', ->
         a = annotations[3]
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
         permissions.setUser('bob')
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
     describe 'Custom options.userAuthorize() callback', ->
 
@@ -197,42 +197,42 @@ describe 'Annotator.Plugin.Permissions', ->
 
       it 'should (by default) allow an action if annotation.permissions[action] includes "group:public"', ->
         a = annotations[0]
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
         permissions.setUser({id: 'bob'})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
       it 'should (by default) allow an action if annotation.permissions[action] includes "user:@user"', ->
         a = annotations[1]
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'bob'})
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'alice'})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
         a = annotations[2]
         permissions.setUser(null)
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'bob'})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
         permissions.setUser({id: 'alice'})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
       it 'should allow an action if annotation.permissions[action] includes "user:@options.userId(@user)"', ->
         a = annotations[1]
         permissions.options.userId = (user) -> user?.id or null
 
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'alice'})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
       it 'should allow an action if annotation.permissions[action] includes "user:@options.userId(@user)"', ->
         a = annotations[3]
 
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'foo', groups: ['other']})
-        assert.isFalse(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeFalsy()
         permissions.setUser({id: 'charlie', groups: ['admin']})
-        assert.isTrue(permissions.authorize('update', a))
+        expect(permissions.authorize('update', a)).toBeTruthy()
 
   describe 'updateAnnotationPermissions', ->
     field = null
@@ -248,21 +248,21 @@ describe 'Annotator.Plugin.Permissions', ->
     it "should NOT be world editable when 'Anyone can edit' checkbox is unchecked", ->
       checkbox.removeAttr('checked')
       permissions.updateAnnotationPermissions('update', field, annotation)
-      assert.isFalse(permissions.authorize('update', annotation, null))
+      expect(permissions.authorize('update', annotation, null)).toBeFalsy()
 
     it "should be world editable when 'Anyone can edit' checkbox is checked", ->
       checkbox.attr('checked', 'checked')
       permissions.updateAnnotationPermissions('update', field, annotation)
-      assert.isTrue(permissions.authorize('update', annotation, null))
+      expect(permissions.authorize('update', annotation, null)).toBeTruthy()
 
     it "should NOT be world editable when 'Anyone can edit' checkbox is unchecked for a second time", ->
       checkbox.attr('checked', 'checked')
       permissions.updateAnnotationPermissions('update', field, annotation)
-      assert.isTrue(permissions.authorize('update', annotation, null))
+      expect(permissions.authorize('update', annotation, null)).toBeTruthy()
 
       checkbox.removeAttr('checked')
       permissions.updateAnnotationPermissions('update', field, annotation)
-      assert.isFalse(permissions.authorize('update', annotation, null))
+      expect(permissions.authorize('update', annotation, null)).toBeFalsy()
 
   describe 'updatePermissionsField', ->
     field = null
@@ -285,19 +285,19 @@ describe 'Annotator.Plugin.Permissions', ->
     afterEach -> field.remove()
 
     it "should have a checked checkbox when there are no permissions", ->
-      assert.isTrue(checkbox.is(':checked'))
+      expect(checkbox.is(':checked')).toBeTruthy()
 
     it "should have an unchecked checkbox when there are permissions", ->
-      assert.isFalse(checkbox.is(':checked'))
+      expect(checkbox.is(':checked')).toBeFalsy()
 
     it "should enable the checkbox by default", ->
-      assert.isTrue(checkbox.is(':enabled'))
+      expect(checkbox[0].getAttribute('disabled')).toBeFalsy()
 
     it "should display the field if the current user has 'admin' permissions", ->
-      assert.isTrue(field.is(':visible'))
+      expect(field.is(':visible')).toBeTruthy()
 
     it "should NOT display the field if the current user does not have 'admin' permissions", ->
-      assert.isFalse(field.is(':visible'))
+      expect(field.is(':visible')).toBeFalsy()
 
   describe 'updateViewer', ->
     controls = null
@@ -306,10 +306,10 @@ describe 'Annotator.Plugin.Permissions', ->
     beforeEach ->
       field = $('<div />').appendTo('<div />')[0]
       controls = {
-        showEdit:   sinon.spy()
-        hideEdit:   sinon.spy()
-        showDelete: sinon.spy()
-        hideDelete: sinon.spy()
+        showEdit:   jasmine.createSpy()
+        hideEdit:   jasmine.createSpy()
+        showDelete: jasmine.createSpy()
+        hideDelete: jasmine.createSpy()
       }
 
     describe 'coarse grained updates based on user', ->
@@ -321,37 +321,37 @@ describe 'Annotator.Plugin.Permissions', ->
 
       it "it should display annotations' users in the viewer element", ->
         permissions.updateViewer(field, annotations[0], controls)
-        assert.equal($(field).html(), 'alice')
-        assert.lengthOf($(field).parent(), 1)
+        expect($(field).html()).toEqual('alice')
+        expect($(field).parent().length).toEqual(1)
 
       it "it should remove the field if annotation has no user", ->
         permissions.updateViewer(field, {}, controls)
-        assert.lengthOf($(field).parent(), 0)
+        expect($(field).parent().length).toEqual(0)
 
       it "it should remove the field if annotation has no user string", ->
         permissions.options.userString = -> null
 
         permissions.updateViewer(field, annotations[1], controls)
-        assert.lengthOf($(field).parent(), 0)
+        expect($(field).parent().length).toEqual(0)
 
       it "it should remove the field if annotation has empty user string", ->
         permissions.options.userString = -> ''
         permissions.updateViewer(field, annotations[1], controls)
-        assert.lengthOf($(field).parent(), 0)
+        expect($(field).parent().length).toEqual(0)
 
       it "should hide controls for users other than the current user", ->
         permissions.updateViewer(field, annotations[0], controls)
-        assert.isFalse(controls.hideEdit.called)
-        assert.isFalse(controls.hideDelete.called)
+        expect(controls.hideEdit).not.toHaveBeenCalled()
+        expect(controls.hideDelete).not.toHaveBeenCalled()
 
         permissions.updateViewer(field, annotations[1], controls)
-        assert(controls.hideEdit.calledOnce)
-        assert(controls.hideDelete.calledOnce)
+        expect(controls.hideEdit).toHaveBeenCalled()
+        expect(controls.hideDelete).toHaveBeenCalled()
 
       it "should show controls for annotations without a user", ->
         permissions.updateViewer(field, annotations[2], controls)
-        assert.isFalse(controls.hideEdit.called)
-        assert.isFalse(controls.hideDelete.called)
+        expect(controls.hideEdit).not.toHaveBeenCalled()
+        expect(controls.hideDelete).not.toHaveBeenCalled()
 
     describe 'fine-grained use (user and permissions)', ->
       annotations = null
@@ -378,16 +378,16 @@ describe 'Annotator.Plugin.Permissions', ->
 
       it "it should should hide edit button if user cannot update", ->
         permissions.updateViewer(field, annotations[0], controls)
-        assert(controls.hideEdit.calledOnce)
+        expect(controls.hideEdit).toHaveBeenCalled()
 
       it "it should should show edit button if user can update", ->
         permissions.updateViewer(field, annotations[1], controls)
-        assert.isFalse(controls.hideEdit.called)
+        expect(controls.hideEdit).not.toHaveBeenCalled()
 
       it "it should should hide delete button if user cannot delete", ->
         permissions.updateViewer(field, annotations[0], controls)
-        assert(controls.hideDelete.calledOnce)
+        expect(controls.hideDelete).toHaveBeenCalled()
 
       it "it should should show delete button if user can delete", ->
         permissions.updateViewer(field, annotations[1], controls)
-        assert.isFalse(controls.hideDelete.called)
+        expect(controls.hideDelete).not.toHaveBeenCalled()

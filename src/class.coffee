@@ -30,21 +30,14 @@ class Delegator
     @options = $.extend(true, {}, @options, options)
     @element = $(element)
 
-    # Delegator creates closures for each event it binds. This is a private
-    # registry of created closures, used to enable event unbinding.
-    @_closures = {}
-
     this.on = this.subscribe
     this.addEvents()
 
-  # Public: binds the function names in the @events Object to their events.
+  # Binds the function names in the @events Object to thier events.
   #
   # The @events Object should be a set of key/value pairs where the key is the
   # event name with optional CSS selector. The value should be a String method
-  # name on the current class.
-  #
-  # This is called by the default Delegator constructor and so shouldn't usually
-  # need to be called by the user.
+  # name on the current class. 
   #
   # Examples
   #
@@ -63,77 +56,64 @@ class Delegator
   #
   # Returns nothing.
   addEvents: ->
-    for event in Delegator._parseEvents(@events)
-      this._addEvent event.selector, event.event, event.functionName
+    for sel, functionName of @events
+      [selector..., event] = sel.split ' '
+      this.addEvent selector.join(' '), event, functionName
 
-  # Public: unbinds functions previously bound to events by addEvents().
-  #
-  # The @events Object should be a set of key/value pairs where the key is the
-  # event name with optional CSS selector. The value should be a String method
-  # name on the current class.
-  #
-  # Returns nothing.
-  removeEvents: ->
-    for event in Delegator._parseEvents(@events)
-      this._removeEvent event.selector, event.event, event.functionName
-
-  # Binds an event to a callback function represented by a String. A selector
-  # can be provided in order to watch for events on a child element.
+  # Binds an event to a callback function represented by a String. An optional
+  # bindTo selector can be provided in order to watch for events on a child
+  # element.
   #
   # The event can be any standard event supported by jQuery or a custom String.
   # If a custom string is used the callback function will not recieve an
   # event object as it's first parameter.
   #
-  # selector     - Selector String matching child elements. (default: '')
+  # bindTo       - Selector String matching child elements. (default: @element)
   # event        - The event to listen for.
   # functionName - A String function name to bind to the event.
   #
   # Examples
   #
   #   # Listens for all click events on instance.element.
-  #   instance._addEvent('', 'click', 'onClick')
+  #   instance.addEvent('', 'click', 'onClick')
   #
   #   # Delegates the instance.onInputFocus() method to focus events on all
   #   # form inputs within instance.element.
-  #   instance._addEvent('form :input', 'focus', 'onInputFocus')
+  #   instance.addEvent('form :input', 'focus', 'onInputFocus')
   #
   # Returns itself.
-  _addEvent: (selector, event, functionName) ->
+  addEvent: (bindTo, event, functionName) ->
     closure = => this[functionName].apply(this, arguments)
 
-    if selector == '' and Delegator._isCustomEvent(event)
-      this.subscribe(event, closure)
-    else
-      @element.delegate(selector, event, closure)
+    isBlankSelector = typeof bindTo is 'string' and bindTo.replace(/\s+/g, '') is ''
 
-    @_closures["#{selector}/#{event}/#{functionName}"] = closure
+    bindTo = @element if isBlankSelector
+
+    if typeof bindTo is 'string'
+      @element.delegate bindTo, event, closure
+    else
+      if this.isCustomEvent(event)
+        this.subscribe event, closure
+      else
+        $(bindTo).bind event, closure
 
     this
 
-  # Unbinds a function previously bound to an event by the _addEvent method.
+  # Checks to see if the provided event is a DOM event supported by jQuery or
+  # a custom user event.
   #
-  # Takes the same arguments as _addEvent(), and an event will only be
-  # successfully unbound if the arguments to removeEvent() are exactly the same
-  # as the original arguments to _addEvent(). This would usually be called by
-  # _removeEvents().
+  # event - String event name.
   #
-  # selector     - Selector String matching child elements. (default: '')
-  # event        - The event to listen for.
-  # functionName - A String function name to bind to the event.
+  # Examples
   #
-  # Returns itself.
-  _removeEvent: (selector, event, functionName) ->
-    closure = @_closures["#{selector}/#{event}/#{functionName}"]
-
-    if selector == '' and Delegator._isCustomEvent(event)
-      this.unsubscribe(event, closure)
-    else
-      @element.undelegate(selector, event, closure)
-
-    delete @_closures["#{selector}/#{event}/#{functionName}"]
-
-    this
-
+  #   this.isCustomEvent('click')              # => false
+  #   this.isCustomEvent('mousedown')          # => false
+  #   this.isCustomEvent('annotation:created') # => true
+  #
+  # Returns true if event is a custom user event.
+  isCustomEvent: (event) ->
+    [event] = event.split('.')
+    $.inArray(event, Delegator.natives) == -1
 
   # Public: Fires an event and calls all subscribed callbacks with any parameters
   # provided. This is essentially an alias of @element.triggerHandler() but
@@ -202,23 +182,8 @@ class Delegator
     @element.unbind.apply @element, arguments
     this
 
-
-# Parse the @events object of a Delegator into an array of objects containing
-# string-valued "selector", "event", and "func" keys.
-Delegator._parseEvents = (eventsObj) ->
-    events = []
-    for sel, functionName of eventsObj
-      [selector..., event] = sel.split ' '
-      events.push({
-        selector: selector.join(' '),
-        event: event,
-        functionName: functionName
-      })
-    return events
-
-
 # Native jQuery events that should recieve an event object. Plugins can
-# add their own methods to this if required.
+# add thier own methods to this if required.
 Delegator.natives = do ->
   specials = (key for own key, val of jQuery.event.special)
   """
@@ -226,20 +191,3 @@ Delegator.natives = do ->
   mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave
   change select submit keydown keypress keyup error
   """.split(/[^a-z]+/).concat(specials)
-
-
-# Checks to see if the provided event is a DOM event supported by jQuery or
-# a custom user event.
-#
-# event - String event name.
-#
-# Examples
-#
-#   Delegator._isCustomEvent('click')              # => false
-#   Delegator._isCustomEvent('mousedown')          # => false
-#   Delegator._isCustomEvent('annotation:created') # => true
-#
-# Returns true if event is a custom user event.
-Delegator._isCustomEvent = (event) ->
-  [event] = event.split('.')
-  $.inArray(event, Delegator.natives) == -1

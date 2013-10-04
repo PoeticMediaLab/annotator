@@ -110,10 +110,7 @@ class Annotator.Plugin.Permissions extends Annotator.Plugin
 
       # Coarse-grained authorization
       else if annotation.user
-        if user
-          return this.userId(user) == this.userId(annotation.user)
-        else
-          return false
+        return user and this.userId(user) == this.userId(annotation.user)
 
       # No authorization info on annotation: free-for-all!
       true
@@ -300,14 +297,13 @@ class Annotator.Plugin.Permissions extends Annotator.Plugin
 
     username = @options.userString annotation.user
     if annotation.user and username and typeof username == 'string'
-      user = Annotator.Util.escape(@options.userString(annotation.user))
+      user = Annotator.$.escape(@options.userString(annotation.user))
       field.html(user).addClass('annotator-user')
     else
       field.remove()
 
-    if controls
-      controls.hideEdit()   unless this.authorize('update', annotation)
-      controls.hideDelete() unless this.authorize('delete', annotation)
+    controls.hideEdit()   unless this.authorize('update', annotation)
+    controls.hideDelete() unless this.authorize('delete', annotation)
 
   # Sets the Permissions#user property on the basis of a received authToken.
   #

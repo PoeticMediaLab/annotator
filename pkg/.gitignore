@@ -1,5 +1,3 @@
-*.js
-*.css
-*.map
-_preamble*
-_tmp
+/annotator.min.js
+/annotator.min.css
+/*

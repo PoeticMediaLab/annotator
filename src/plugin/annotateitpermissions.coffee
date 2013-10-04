@@ -7,7 +7,10 @@
 #
 # Examples
 #
-#   new Annotator.plugin.AnnotateItPermissions(annotator.element)
+#   new Annotator.plugin.AnnotateItPermissions(annotator.element, {
+#     user: 'Alice',
+#     consumer: 'annotateit'
+#   })
 #
 # Returns a new instance of the AnnotateItPermissions Object.
 class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permissions
@@ -27,8 +30,18 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
       authenticated: 'group:__authenticated__'
       consumer: 'group:__consumer__'
 
-    userId: (user) -> user.userId
-    userString: (user) -> user.userId
+    # [This subclass of Permissions doesn't provide a userId function, as it is
+    #  assumed that the user field of each annotation is a straightforward string
+    #  userId.]
+
+    # Public: Used by the plugin to determine a display name for the @user
+    # property. By default this accepts and returns the user String but can be
+    # over-ridden in the @options object passed into the constructor.
+    #
+    # user - A String username or null if no user is set.
+    #
+    # Returns the String provided as user object
+    userString: (user) -> user
 
     # Public: Used by AnnotateItPermissions#authorize to determine whether a user can
     # perform an action on an annotation.
@@ -38,28 +51,32 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
     #   https://github.com/okfn/annotator-store/blob/master/annotator/authz.py
     #
     # Returns a Boolean, true if the user is authorised for the action provided.
-    userAuthorize: (action, annotation, user) ->
+    userAuthorize: (action, annotation, user, consumer) ->
       permissions = annotation.permissions or {}
       action_field = permissions[action] or []
 
-      if @groups.world in action_field
-        return true
+      if not (user and consumer)
+        return @groups.world in action_field
 
-      else if user? and user.userId? and user.consumerKey?
-        if user.userId == annotation.user and user.consumerKey == annotation.consumer
+      else
+        if @groups.world in action_field
+          return true
+        else if user == annotation.user and consumer == annotation.consumer
           return true
         else if @groups.authenticated in action_field
           return true
-        else if user.consumerKey == annotation.consumer and @groups.consumer in action_field
+        else if consumer == annotation.consumer and @groups.consumer in action_field
           return true
-        else if user.consumerKey == annotation.consumer and user.userId in action_field
-          return true
-        else if user.consumerKey == annotation.consumer and user.admin
+        else if consumer == annotation.consumer and user in action_field
           return true
         else
           return false
-      else
-        return false
+
+    # Default user object.
+    user: ''
+
+    # Default consumer
+    consumer: 'annotateit'
 
     # Default permissions for all annotations. Anyone can
     # read, but only annotation owners can update/delete/admin.
@@ -69,6 +86,48 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
       'delete': []
       'admin':  []
     }
+
+  # The constructor called when a new instance of the AnnotateItPermissions
+  # plugin is created. See class documentation for usage.
+  #
+  # element - A DOM Element on which events are bound.
+  # options - An Object literal containing custom options.
+  #
+  # Returns an instance of the Permissions object.
+  constructor: (element, options) ->
+    super
+
+    if @options.consumer
+      this.setConsumer(@options.consumer)
+      delete @options.consumer
+
+  # Public: Sets the AnnotateItPermissions#consumer property.
+  #
+  # consumer - A String representing the consumer of the current user.
+  #
+  # Examples
+  #
+  #   permissions.setConsumer('annotateit')
+  #
+  # Returns nothing.
+  setConsumer: (consumer) ->
+    @consumer = consumer
+
+  # Public: Determines whether the provided action can be performed on the
+  # annotation. This uses the user-configurable 'userAuthorize' method to
+  # determine if an annotation is annotatable. See the default method for
+  # documentation on its behaviour.
+  #
+  # Returns a Boolean, true if the action can be performed on the annotation.
+  authorize: (action, annotation, user, consumer) ->
+    user = @user if user == undefined
+    consumer = @consumer if consumer == undefined
+
+    if @options.userAuthorize
+      return @options.userAuthorize.call(@options, action, annotation, user, consumer)
+
+    else # userAuthorize nulled out: free-for-all!
+      return true
 
   # Event callback: Appends the @options.permissions, @options.user and
   # @options.consumer objects to the provided annotation object.
@@ -84,11 +143,9 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
   #
   # Returns nothing.
   addFieldsToAnnotation: (annotation) =>
-    if annotation
-      annotation.permissions = @options.permissions
-      if @user
-        annotation.user = @user.userId
-        annotation.consumer = @user.consumerKey
+    super
+    if annotation and @consumer
+      annotation.consumer = @consumer
 
   # Field callback: Updates the state of the "anyone can…" checkboxes
   #
@@ -105,7 +162,7 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
     field.hide() unless this.authorize('admin', annotation)
 
     # See if we can authorise with any old user from this consumer
-    if @user and this.authorize(action, annotation || {}, {userId: '__nonexistentuser__', consumerKey: @user.consumerKey})
+    if this.authorize(action, annotation || {}, '__nonexistentuser__')
       input.attr('checked', 'checked')
     else
       input.removeAttr('checked')
@@ -129,11 +186,12 @@ class Annotator.Plugin.AnnotateItPermissions extends Annotator.Plugin.Permission
     else
       annotation.permissions[type] = []
 
-  # Sets the Permissions#user property on the basis of a received authToken. This plugin
-  # simply uses the entire token to represent the user.
+  # Sets the Permissions#user and Permissions#consumer properties on the basis
+  # of a received authToken.
   #
   # token - the authToken received by the Auth plugin
   #
   # Returns nothing.
   _setAuthFromToken: (token) =>
-    this.setUser(token)
+    super
+    this.setConsumer(token.consumerKey)

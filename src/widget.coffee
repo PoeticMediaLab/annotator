@@ -23,17 +23,10 @@ class Annotator.Widget extends Delegator
     super
     @classes = $.extend {}, Annotator.Widget.prototype.classes, @classes
 
-  # Public: Unbind the widget's events and remove its element from the DOM.
-  #
-  # Returns nothing.
-  destroy: ->
-    this.removeEvents()
-    @element.remove()
-
   checkOrientation: ->
     this.resetOrientation()
 
-    window   = $(Annotator.Util.getGlobal())
+    window   = $(util.getGlobal())
     widget   = @element.children(":first")
     offset   = widget.offset()
     viewport = {

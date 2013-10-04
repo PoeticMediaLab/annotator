@@ -26,7 +26,7 @@
 #
 # Returns itself for chaining.
 Annotator::setupPlugins = (config={}, options={}) ->
-  win = Annotator.Util.getGlobal()
+  win = util.getGlobal()
 
   # Set up the default plugins.
   plugins = ['Unsupported', 'Auth', 'Tags', 'Filter', 'Store', 'AnnotateItPermissions']

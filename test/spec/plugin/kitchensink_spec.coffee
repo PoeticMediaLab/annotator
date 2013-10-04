@@ -1,28 +1,23 @@
-class MockPlugin
-  constructor: ->
-  pluginInit: ->
-
 describe 'Annotator::setupPlugins', ->
   annotator = null
   $fix = null
 
   beforeEach ->
-    for p in ['AnnotateItPermissions', 'Auth', 'Markdown', 'Store', 'Tags', 'Unsupported']
-      Annotator.Plugin[p] = MockPlugin
-
     addFixture('kitchensink')
     $fix = $(fix())
+    this.addMatchers
+      toContainFilter: (prop) -> prop in (f.property for f in this.actual.filters)
 
   afterEach -> clearFixtures()
 
   it 'should added to the Annotator prototype', ->
-    assert.equal(typeof Annotator::setupPlugins, 'function')
+    expect(typeof Annotator::setupPlugins).toBe('function')
 
   it 'should be callable via jQuery.fn.Annotator', ->
-    sinon.spy(Annotator.prototype, 'setupPlugins')
+    spyOn Annotator.prototype, 'setupPlugins'
 
     $fix.annotator().annotator('setupPlugins', {}, {Filter: {appendTo: fix()}})
-    assert(Annotator::setupPlugins.calledOnce)
+    expect(Annotator::setupPlugins).toHaveBeenCalled()
 
   describe 'called with no parameters', ->
     _Showdown = null
@@ -36,11 +31,11 @@ describe 'Annotator::setupPlugins', ->
 
     describe 'it includes the Unsupported plugin', ->
       it 'should add the Unsupported plugin by default', ->
-        assert.isDefined(annotator.plugins.Unsupported)
+        expect(annotator.plugins.Unsupported).toBeDefined()
 
     describe 'it includes the Tags plugin', ->
       it 'should add the Tags plugin by default', ->
-        assert.isDefined(annotator.plugins.Tags)
+        expect(annotator.plugins.Tags).toBeDefined()
 
     describe 'it includes the Filter plugin', ->
       filterPlugin = null
@@ -48,36 +43,32 @@ describe 'Annotator::setupPlugins', ->
       beforeEach -> filterPlugin = annotator.plugins.Filter
 
       it 'should add the Filter plugin by default', ->
-        assert.isDefined(filterPlugin)
+        expect(filterPlugin).toBeDefined()
 
-      it 'should have filters for annotations, tags and users', ->
+      it 'should have a filters for annotations, tags and users', ->
         expectedFilters = ['text', 'user', 'tags']
-        for filter in expectedFilters
-          assert.isTrue(filter in (f.property for f in filterPlugin.filters))
+        expect(filterPlugin).toContainFilter(filter) for filter in expectedFilters
 
     describe 'and with Showdown loaded in the page', ->
       it 'should add the Markdown plugin', ->
-        assert.isDefined(annotator.plugins.Markdown)
+        expect(annotator.plugins.Markdown).toBeDefined()
 
   describe 'called with AnnotateIt config', ->
     beforeEach ->
       # Prevent store making initial AJAX requests.
-      sinon.stub(Annotator.Plugin.Store.prototype, 'pluginInit')
+      spyOn Annotator.Plugin.Store.prototype, 'pluginInit'
 
       annotator = new Annotator(fix())
       annotator.setupPlugins()
 
-    afterEach ->
-      Annotator.Plugin.Store.prototype.pluginInit.restore()
+  it 'should add the Store plugin', ->
+    expect(annotator.plugins.Store).toBeDefined()
 
-    it 'should add the Store plugin', ->
-      assert.isDefined(annotator.plugins.Store)
+  it 'should add the AnnotateItPermissions plugin', ->
+    expect(annotator.plugins.AnnotateItPermissions).toBeDefined()
 
-    it 'should add the AnnotateItPermissions plugin', ->
-      assert.isDefined(annotator.plugins.AnnotateItPermissions)
-
-    it 'should add the Auth plugin', ->
-      assert.isDefined(annotator.plugins.Auth)
+  it 'should add the Auth plugin', ->
+    expect(annotator.plugins.Auth).toBeDefined()
 
   describe 'called with plugin options', ->
     beforeEach -> annotator = new Annotator(fix())
@@ -90,9 +81,9 @@ describe 'Annotator::setupPlugins', ->
           addAnnotationFilter: false
           appendTo: fix()
 
-      assert.lengthOf(annotator.plugins.Filter.filters, 0)
+      expect(annotator.plugins.Filter.filters.length).toBe(0)
 
     it 'should NOT load a plugin if its key is set to null OR false', ->
       annotator.setupPlugins null, {Filter: false, Tags: null}
-      assert.isUndefined(annotator.plugins.Tags)
-      assert.isUndefined(annotator.plugins.Filter)
+      expect(annotator.plugins.Tags).not.toBeDefined()
+      expect(annotator.plugins.Filter).not.toBeDefined()
