@@ -21,24 +21,28 @@ class Annotator.Viewer extends Annotator.Widget
     item:   """
             <li class="annotator-annotation annotator-item">
               <span class="annotator-controls">
-                <button class="annotator-edit">Edit</button>
-                <button class="annotator-delete">Delete</button>
+                <a href="#" title="View as webpage" class="annotator-link">View as webpage</a>
+                <button title="Edit" class="annotator-edit">Edit</button>
+                <button title="Delete" class="annotator-delete">Delete</button>
               </span>
             </li>
             """
 
+  # Configuration options
+  options:
+    readOnly: false # Start the viewer in read-only mode. No controls will be shown.
+
   # Public: Creates an instance of the Viewer object. This will create the
   # @element from the @html.element string and set up all events.
   #
-  # options - An Object literal containing options. There are currently no
-  #           options implemented.
+  # options - An Object literal containing options.
   #
   # Examples
   #
   #   # Creates a new viewer, adds a custom field and displays an annotation.
-  #   viewer = new Annotator.Viewer
+  #   viewer = new Annotator.Viewer()
   #   viewer.addField({
-  #     load:  someLoadCallback
+  #     load: someLoadCallback
   #   })
   #   viewer.load(annotation)
   #
@@ -66,7 +70,7 @@ class Annotator.Viewer extends Annotator.Widget
   #
   # Returns itself.
   show: (event) =>
-    util.preventEventDefault event
+    Annotator.Util.preventEventDefault event
 
     controls = @element
       .find('.annotator-controls')
@@ -106,7 +110,7 @@ class Annotator.Viewer extends Annotator.Widget
   #
   # Returns itself.
   hide: (event) =>
-    util.preventEventDefault event
+    Annotator.Util.preventEventDefault event
 
     @element.addClass(@classes.hide)
     this.publish('hide')
@@ -118,7 +122,7 @@ class Annotator.Viewer extends Annotator.Widget
   #
   # Examples
   #
-  #   viewer.load([annotration1, annotation2, annotation3])
+  #   viewer.load([annotation1, annotation2, annotation3])
   #
   # Returns itslef.
   load: (annotations) =>
@@ -128,15 +132,6 @@ class Annotator.Viewer extends Annotator.Widget
     for annotation in @annotations
       item = $(@item).clone().appendTo(list).data('annotation', annotation)
       controls = item.find('.annotator-controls')
-
-      edit = controls.find('.annotator-edit')
-      del  = controls.find('.annotator-delete')
-      controller = {
-        showEdit: -> edit.removeAttr('disabled')
-        hideEdit: -> edit.attr('disabled', 'disabled')
-        showDelete: -> del.removeAttr('disabled')
-        hideDelete: -> del.attr('disabled', 'disabled')
-      }
 
       link = controls.find('.annotator-link')
       edit = controls.find('.annotator-edit')
@@ -159,30 +154,13 @@ class Annotator.Viewer extends Annotator.Widget
           hideDelete: -> del.attr('disabled', 'disabled')
         }
 
-
       for field in @fields
         element = $(field.element).clone().appendTo(item)[0]
         field.load(element, annotation, controller)
 
-
-    
-
-
     this.publish('load', [@annotations])
 
-#     # add the category label if it has one
-#     if annotation.category?
-#       this.addField({
-#     # This is called when the viewer is loaded.
-#         
-#         load: (field, annotation) ->
-#           field = $(field)
-#           field.text(annotation.category) # Display the category
-#       })
-
-
-
-    this.show();
+    this.show()
 
   # Public: Adds an addional field to an annotation view. A callback can be
   # provided to update the view on load.
@@ -244,7 +222,6 @@ class Annotator.Viewer extends Annotator.Widget
     item = $(event.target).parents('.annotator-annotation')
 
     this.publish(type, [item.data('annotation')])
-
 
 # Private: simple parser for hypermedia link structure
 #

@@ -28,17 +28,16 @@ class Annotator.Plugin.Store extends Annotator.Plugin
   # User customisable options available.
   options:
 
-    # This is the API endpoint. If the server supports Cross Origin Resource
-    # Sharring (CORS) a full URL can be used here.
-    prefix: '/store'
-
-    # Fetch the latest annotations on plugin initialisation.
-    # NOTE: Not currently implemented.
-    autoFetch: true
-
     # Custom meta data that will be attached to every annotation that is sent
     # to the server. This _will_ override previous values.
     annotationData: {}
+
+    # Should the plugin emulate HTTP methods like PUT and DELETE for
+    # interaction with legacy web servers? Setting this to `true` will fake
+    # HTTP `PUT` and `DELETE` requests with an HTTP `POST`, and will set the
+    # request header `X-HTTP-Method-Override` with the name of the desired
+    # method.
+    emulateHTTP: false
 
     # If loadFromSearch is set, then we load the first batch of
     # annotations from the 'search' URL as set in `options.urls`
@@ -50,6 +49,10 @@ class Annotator.Plugin.Store extends Annotator.Plugin
     #       'uri': 'http://this/document/only'
     #     }
     loadFromSearch: false
+
+    # This is the API endpoint. If the server supports Cross Origin Resource
+    # Sharing (CORS) a full URL can be used here.
+    prefix: '/store'
 
     # The server URLs for each available action. These URLs can be anything but
     # must respond to the appropraite HTTP method. The token ":id" can be used
@@ -131,6 +134,7 @@ class Annotator.Plugin.Store extends Annotator.Plugin
     # elements.
     if annotation not in @annotations
       this.registerAnnotation(annotation)
+
       this._apiRequest('create', annotation, (data) =>
         # Update with (e.g.) ID from server.
         if not data.id?
@@ -171,13 +175,8 @@ class Annotator.Plugin.Store extends Annotator.Plugin
   #
   # Returns nothing.
   annotationDeleted: (annotation) ->
-      #    console.log(annotation, this.annotations)
-    for stored_ann in this.annotations
-      if annotation.id == stored_ann.id
-          #        console.log(annotation)
-        annotation=stored_ann
-        this._apiRequest 'destroy', annotation, (() => this.unregisterAnnotation(annotation))
-        break
+    if annotation in this.annotations
+      this._apiRequest 'destroy', annotation, (() => this.unregisterAnnotation(annotation))
 
   # Public: Registers an annotation with the Store. Used to check whether an
   # annotation has already been created when using Store#annotationCreated().
@@ -260,8 +259,21 @@ class Annotator.Plugin.Store extends Annotator.Plugin
   #
   # Returns nothing.
   _onLoadAnnotations: (data=[]) =>
-    @annotations = data
-    @annotator.loadAnnotations(data.slice()) # Clone array
+
+    annotationMap = {}
+    for a in @annotations
+      annotationMap[a.id] = a
+
+    newData = []
+    for a in data
+      if annotationMap[a.id]
+        annotation = annotationMap[a.id]
+        this.updateAnnotation annotation, a
+      else
+        newData.push(a)
+
+    @annotations = @annotations.concat(newData)
+    @annotator.loadAnnotations(newData.slice()) # Clone array
 
   # Public: Performs the same task as Store.#loadAnnotations() but calls the
   # 'search' URI with an optional query string.
@@ -351,23 +363,43 @@ class Annotator.Plugin.Store extends Annotator.Plugin
   #
   # Returns Object literal of $.ajax() options.
   _apiRequestOptions: (action, obj, onSuccess) ->
+    method = this._methodFor(action)
+
     opts = {
-      type:       this._methodFor(action),
+      type:       method,
       headers:    @element.data('annotator:headers'),
       dataType:   "json",
       success:    (onSuccess or ->),
       error:      this._onError
     }
 
+    # If emulateHTTP is enabled, we send a POST and put the real method in an
+    # HTTP request header.
+    if @options.emulateHTTP and method in ['PUT', 'DELETE']
+      opts.headers = $.extend(opts.headers, {'X-HTTP-Method-Override': method})
+      opts.type = 'POST'
+
     # Don't JSONify obj if making search request.
     if action is "search"
-      opts = $.extend(opts, {data: obj})
-    else
-      opts = $.extend(opts, {
-        data:        obj && this._dataFor(obj)
-        contentType: "application/json; charset=utf-8"
-      })
-    opts
+      opts = $.extend(opts, data: obj)
+      return opts
+
+    data = obj && this._dataFor(obj)
+
+    # If emulateJSON is enabled, we send a form request (the correct
+    # contentType will be set automatically by jQuery), and put the
+    # JSON-encoded payload in the "json" key.
+    if @options.emulateJSON
+      opts.data = {json: data}
+      if @options.emulateHTTP
+        opts.data._method = method
+      return opts
+
+    opts = $.extend(opts, {
+      data: data
+      contentType: "application/json; charset=utf-8"
+    })
+    return opts
 
   # Builds the appropriate URL from the options for the action provided.
   #
@@ -384,11 +416,13 @@ class Annotator.Plugin.Store extends Annotator.Plugin
   #
   # Returns URL String.
   _urlFor: (action, id) ->
-    replaceWith = if id? then '/' + id else ''
-
-    url = @options.prefix or '/'
+    url = if @options.prefix? then @options.prefix else ''
     url += @options.urls[action]
-    url = url.replace(/\/:id/, replaceWith)
+    # If there's a '/:id' in the URL, either fill in the ID or remove the
+    # slash:
+    url = url.replace(/\/:id/, if id? then '/' + id else '')
+    # If there's a bare ':id' in the URL, then substitute directly:
+    url = url.replace(/:id/, if id? then id else '')
 
     url
 

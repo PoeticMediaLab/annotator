@@ -72,7 +72,7 @@ class Annotator.Editor extends Annotator.Widget
   #
   # Returns itself.
   show: (event) =>
-    event?.preventDefault()
+    Annotator.Util.preventEventDefault event
 
     @element.removeClass(@classes.hide)
     @element.find('.annotator-save').addClass(@classes.focus)
@@ -104,7 +104,7 @@ class Annotator.Editor extends Annotator.Widget
   #
   # Returns itself.
   hide: (event) =>
-    event?.preventDefault()
+    Annotator.Util.preventEventDefault event
 
     @element.addClass(@classes.hide)
     this.publish('hide')
@@ -134,11 +134,6 @@ class Annotator.Editor extends Annotator.Widget
 
     for field in @fields
       field.load(field.element, @annotation)
-      
-      # make the correct radio button checked
-      if annotation.category? and field.type=='radio'
-        if field.value == @annotation.category
-          field.element.childNodes[0].checked = true
 
     this.show()
 
@@ -166,7 +161,7 @@ class Annotator.Editor extends Annotator.Widget
   #
   # Returns itself.
   submit: (event) =>
-    event?.preventDefault()
+    Annotator.Util.preventEventDefault event
 
     for field in @fields
       field.submit(field.element, @annotation)
@@ -182,8 +177,8 @@ class Annotator.Editor extends Annotator.Widget
   #           id     - A unique id for the form element will also be set as the
   #                    "for" attrubute of a label if there is one. Defaults to
   #                    a timestamp. (default: "annotator-field-{timestamp}")
-  #           type   - Input type String. One of "input", "textarea", "checkbox"
-  #                    (default: "input")
+  #           type   - Input type String. One of "input", "textarea",
+  #                    "checkbox", "select" (default: "input")
   #           label  - Label to display either in a label Element or as place-
   #                    holder text depending on the type. (default: "")
   #           load   - Callback Function called when the editor is loaded with a
@@ -232,7 +227,7 @@ class Annotator.Editor extends Annotator.Widget
   # Returns the created <li> Element.
   addField: (options) ->
     field = $.extend({
-      id:     'annotator-field-' + util.uuid()
+      id:     'annotator-field-' + Annotator.Util.uuid()
       type:   'input'
       label:  ''
       load:   ->
@@ -246,8 +241,8 @@ class Annotator.Editor extends Annotator.Widget
     switch (field.type)
       when 'textarea'          then input = $('<textarea />')
       when 'input', 'checkbox' then input = $('<input />')
-      when 'radio'             then input = $('<input type="radio"/>')
-      when 'span'              then input = $('<span/>')
+      when 'select' then input = $('<select />')
+
     element.append(input);
 
     input.attr({
@@ -255,26 +250,9 @@ class Annotator.Editor extends Annotator.Widget
       placeholder: field.label
     })
 
-    if field.type == 'span'
-      element.addClass('annotator-status')
-      element.append($('<label />', {for: field.id, html: field.label}))
-
     if field.type == 'checkbox'
       input[0].type = 'checkbox'
       element.addClass('annotator-checkbox')
-      element.append($('<label />', {for: field.id, html: field.label}))
-
-    if field.type == 'radio'
-      input[0].type = 'radio'
-      input[0].name = 'radioset'
-      input[0].id = field.value
-      
-      
-      if field.checked
-        input[0].checked = true
-
-
-      element.addClass('annotator-radio')
       element.append($('<label />', {for: field.id, html: field.label}))
 
     @element.find('ul:first').append(element)

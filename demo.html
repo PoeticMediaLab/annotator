@@ -13,36 +13,14 @@
     <script src="lib/vendor/json2.js"></script>
 
     <!-- The main Annotator script -->
-    <script src="pkg/annotator.js"></script>
+    <script src="pkg/annotator-full.min.js"></script>
 
     <!-- Annotator's styling and images -->
     <link rel="stylesheet" type="text/css" href="pkg/annotator.css">
 
-    <!-- The following plugins are entirely optional -->
+    <script src="pkg/annotator.color_tags.js"></script>
+    <script src="pkg/annotator.categories.js"></script>
 
-    <!-- The Store plugin. Saves annotations to a remote backend -->
-    <script src="pkg/annotator.store.js"></script>
-    <script src="pkg/annotator.document.js"></script>
-
-
-    <!-- The Auth plugin. Allows users of Annotator to authenticate themselves
-         to the remote backend -->
-    <script src="pkg/annotator.auth.js"></script>
-
-    <!-- The Permissions plugin. See who created which annotation and create
-         annotations as a specified user -->
-    <script src="pkg/annotator.permissions.js"></script>
-
-    <!-- The Tags plugin. Edit and display tag keywords on annotations -->
-    <script src="pkg/annotator.tags.js"></script>
-
-    <!-- The Markdown plugin. Treat annotation text as Markdown -->
-    <script src="lib/vendor/showdown.js"></script>
-    <script src="pkg/annotator.markdown.js"></script>
-
-
-     <script src="pkg/annotator.categories.js"></script> 
-     <script src="pkg/annotator.color_tags.js"></script>
   </head>
 
   <body>
@@ -84,29 +62,29 @@
           alert("Ooops! it looks like you haven't built the Annotator concatenation file. " +
                 "Either download a tagged release from GitHub, or modify the Cakefile to point " +
                 "at your copy of the YUI compressor and run `cake package`.");
-                } else {
+        } else {
+
+       var categories =  [ { name: 'Sourcing'},
+                           { name: 'Context'},
+                           { name: 'Close Reading'},
+                           { name: 'Corrobration' }, { name: 'Corrobration 1' }, { name: 'Corrobration 2' }, { name: 'Corrobration 3' }
+                         ];
+
+       var colors=['#fd7954', ' #78cefd', ' #1588ba', '#92a6c4', '#39404a', '#3a404a']
+ 
+       // This is the important bit: how to create the annotator and add
+       // plugins
+       $('#airlock').annotator()
+                    .annotator('addPlugin', 'Permissions')
+                    .annotator('addPlugin', 'Tags')
+                    .annotator('addPlugin', 'ColorTags', {colors: colors, limit: 5})
+                    .annotator('addPlugin', 'Categories', categories);
+      $('#airlock').data('annotator').plugins['Permissions'].setUser("Joe Bloggs");
 
 
-                var options = {};
-                options.categories = {
-                    'errata':'annotator-hl-errata', 
-                    'comment':'annotator-hl-comment', 
-                    'suggestion':'annotator-hl-suggestion' };
+     }
+});
 
-          // This is the important bit: how to create the annotator and add
-          // plugins
-          $('#airlock').annotator()
-                       .annotator('addPlugin', 'Categories', options.categories)
-                       .annotator('addPlugin', 'Permissions')
-                       .annotator('addPlugin', 'Markdown')
-                       .annotator('addPlugin', 'Tags').annotator('addPlugin', 'Store', {'uri': 'http://this/document/only'})
-                       .annotator('addPlugin', 'ColorTags');
-
-
-
-          $('#airlock').data('annotator').plugins['Permissions'].setUser("Joe Bloggs");
-        }
-      });
     </script>
   </body>
 
