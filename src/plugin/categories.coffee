@@ -1,4 +1,4 @@
-# Categoris plugin allows users to add multiple annotation for same selection
+# Categories plugin allows users to add multiple annotation for same selection
 class Annotator.Plugin.Categories extends Annotator.Plugin
   # HTML templates for the plugin UI.
   html:
