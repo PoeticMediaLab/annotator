@@ -13,11 +13,14 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
     limit: null
     classForSelectedColor: 'selected'
     colorsForCategory: {}
+    orgionalColors: {}
 
   events:
     '.tag-color click'                 : 'toggleSelectedColor'
-    'annotationEditorShown'            : 'updateEditor'
+    'annotationEditorShown'            : 'parseColorsTagsFromAnnotator'
+    'annotationEditorSubmit'           : 'stringifyColorTags'
     'annotatorSelectedCategoryChanged' : 'updateSelectedColorForCurrentCategory'
+    '.annotator-cancel click'          : "resetColors"
 
   # The field element added to the Annotator.Editor wrapped in jQuery. Cached to
   # save having to recreate it everytime the editor is displayed.
@@ -43,12 +46,6 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
     @annotator.viewer.addField
       load: @updateViewer
 
-    @field = @annotator.editor.addField
-      submit: @setColorsForCategories
-      load:   @updateColorsForCategories
-
-    @input = $(@field).find(":input")
-
   constructor: (element, options) ->
     super element, options
     if options.limit?
@@ -65,21 +62,25 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
     else
       @removeColorForSelectedCategory $(event.target).data('color')
 
-  updateEditor: (editor, annotation) ->
+  parseColorsTagsFromAnnotator: (editor, annotation) ->
+    @options.colorsForCategory = {}
+    @options.originalColors    = {}
+
+    if annotation.category_colors
+      @options.colorsForCategory = JSON.parse(annotation.category_colors)
+      @options.originalColors   = @options.colorsForCategory
+
     @fixEditorHeight editor, annotation
-    category = @annotator.plugins['Categories'].selectedCategory().html()
+    category = @annotator.plugins['ColorCategories'].selectedCategory().html()
     @updateSelectedColorForCurrentCategory(category)
 
   addColorForSelectedCategory: (color)->
-    category = @annotator.plugins['Categories'].selectedCategory().html()
+    category = @annotator.plugins['ColorCategories'].selectedCategory().html()
     @options.colorsForCategory[category] ||= []
     @options.colorsForCategory[category].push color
 
-    #update color tag field value
-    @input.val JSON.stringify(@options.colorsForCategory)
-
   removeColorForSelectedCategory: (color) ->
-    category = @annotator.plugins['Categories'].selectedCategory().html()
+    category = @annotator.plugins['ColorCategories'].selectedCategory().html()
 
     @options.colorsForCategory[category] ||= []
     colorIndex =  @options.colorsForCategory[category].indexOf(color)
@@ -87,15 +88,12 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
     if (colorIndex > -1)
       @options.colorsForCategory[category].splice(colorIndex, 1)
 
-    #update color tag field value
-    @input.val JSON.stringify(@options.colorsForCategory)
-
   #TODO: DRYout by using method from categories plugin
   annotationField: ->
     @element.find("textarea:first")
 
   updateViewer: (filed, annotator) ->
-    colorsForCategory = annotator.categoriesColors
+    colorsForCategory = annotator.category_colors
     categoriesDom = $(filed).parent().find("div.categories")
 
     if colorsForCategory && colorsForCategory.length > 1
@@ -125,9 +123,31 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
       colorTagBorderHeight  = @options.color_tags.length * 2
       annotatorForm.height controlHeight + colorTagWrapperHeight + colorTagBorderHeight
 
+  colorTagsWithAnnotations: ->
+    colorTags         = {}
+    categories        = Object.keys @options.colorsForCategory
+    annotator         = @annotator
+    colorsForCategory =  @options.colorsForCategory
+    window.color=@options.colorsForCategory
+    $.each(categories,(i, category) ->
+      textForCategory = annotator.plugins['ColorCategories'].getTextForCategory(category)
+      if textForCategory? && not /^\s*$/.test(textForCategory)
+        colorTags[category] = colorsForCategory[category]
+    )
+
+    colorTags
+
+  stringifyColorTags: (editor, annotation) ->
+    tags = @colorTagsWithAnnotations()
+    if Object.keys(tags).length > 0
+      annotation.category_colors = JSON.stringify(tags)
+    else
+      annotation.category_colors = ''
+
   setColorsForCategories: (field, annotator) ->
     input = $(field).find(":input")
-    annotator.categoriesColors = input.val()
+    annotator.category_colors = input.val()
+    input.val('')
 
   updateSelectedColorForCurrentCategory: (category) ->
     colorTags = @colorTagsWrapperDom().find('span.tag-color')
@@ -140,6 +160,7 @@ class Annotator.Plugin.ColorTags extends Annotator.Plugin
         tagWithColor = that.colorTagsWrapperDom().find("span[data-color='"+color+"']")
         tagWithColor.addClass that.options.classForSelectedColor
 
-  updateColorsForCategories: (field, annotator) ->
-    input = $(field).find(":input")
-    input.val(annotator.categoriesColors).hide().addClass 'categories-colors'
+  resetColors: ->
+    colorTags = @colorTagsWrapperDom().find('span.tag-color')
+    colorTags.removeClass @options.classForSelectedColor
+    @options.category_colors = @options.orgionalColors

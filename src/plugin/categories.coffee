@@ -1,5 +1,5 @@
-# Categories plugin allows users to add multiple annotation for same selection
-class Annotator.Plugin.Categories extends Annotator.Plugin
+# Categoris plugin allows users to add multiple annotation for same selection
+class Annotator.Plugin.ColorCategories extends Annotator.Plugin
   # HTML templates for the plugin UI.
   html:
     element: """
@@ -77,6 +77,8 @@ class Annotator.Plugin.Categories extends Annotator.Plugin
     @element.find('.annotator-category').removeClass @options.classForSelectedCategory
     @element.find('.annotator-category:first').addClass @options.classForSelectedCategory
     @annotationField().val @getTextForCategory(@element.find('.annotator-category:first').html())
+    @element.find('.annotator-category:first').trigger 'click'
+
 
   annotationField: ->
     @element.find("textarea:first")
@@ -85,7 +87,8 @@ class Annotator.Plugin.Categories extends Annotator.Plugin
     @options.categorizeAnnotations[category] || ''
 
   setTextForCategory: (category, annotation) ->
-    @options.categorizeAnnotations[category] = annotation
+    if annotation? && not /^\s*$/.test(annotation)
+      @options.categorizeAnnotations[category] = annotation
 
   stringifyCategorizeAnnotation: (editor, annotation)->
     # Annotation for selected category is not saved yet. So lets do it now
@@ -150,5 +153,3 @@ class Annotator.Plugin.Categories extends Annotator.Plugin
 
         viewerField.append annotation
       )
-
-
